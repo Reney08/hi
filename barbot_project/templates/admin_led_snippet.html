@@ -1,0 +1,352 @@
+<style>
+    .led-dashboard {
+        max-width: 700px;
+        margin: 20px auto;
+        padding: 25px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: #1a1a1a;
+        border-radius: 16px;
+        border: 1px solid #2d2d2d;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .led-header {
+        margin-bottom: 25px;
+        border-bottom: 2px solid #2d2d2d;
+        padding-bottom: 15px;
+    }
+
+    .led-header h2 {
+        margin: 0 0 8px 0;
+        color: #fff;
+        font-size: 1.8rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .led-header p {
+        color: #888;
+        margin: 0;
+        font-size: 0.95rem;
+    }
+
+    /* Dropdown Bereich */
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-group label {
+        display: block;
+        color: #00adb5;
+        font-weight: 600;
+        margin-bottom: 10px;
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .led-select {
+        width: 100%;
+        padding: 14px 20px;
+        background: #252525;
+        border: 2px solid #444;
+        border-radius: 10px;
+        color: #fff;
+        font-size: 1.1rem;
+        font-weight: 500;
+        cursor: pointer;
+        outline: none;
+        transition: all 0.3s ease;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' fill='%2300adb5'><polygon points='0,0 100,0 50,50'/></svg>");
+        background-repeat: no-repeat;
+        background-size: 12px;
+        background-position: calc(100% - 20px) center;
+    }
+
+    .led-select:focus {
+        border-color: #00adb5;
+        box-shadow: 0 0 15px rgba(0, 173, 181, 0.3);
+    }
+
+    /* Dynamische Einstellungs-Panels */
+    .mode-panel {
+        background: #222;
+        border: 1px solid #333;
+        border-radius: 12px;
+        padding: 20px;
+        margin-top: 20px;
+        display: none; /* Wird via JS gesteuert */
+        animation: slideDown 0.3s ease-in-out forwards;
+    }
+
+    .mode-panel h3 {
+        margin: 0 0 10px 0;
+        color: #fff;
+        font-size: 1.2rem;
+    }
+
+    .mode-panel p {
+        margin: 0 0 20px 0;
+        color: #888;
+        font-size: 0.9rem;
+    }
+
+    /* Styling für den Geschwindigkeitsregler (Slider) */
+    .slider-container {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .led-slider {
+        flex: 1;
+        -webkit-appearance: none;
+        appearance: none;
+        height: 8px;
+        border-radius: 5px;
+        background: #444;
+        outline: none;
+    }
+
+    .led-slider::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 8px;
+        cursor: pointer;
+        background: linear-gradient(90deg, #444, #00adb5);
+        border-radius: 5px;
+    }
+
+    .led-slider::-webkit-slider-thumb {
+        height: 22px;
+        width: 22px;
+        border-radius: 50%;
+        background: #fff;
+        border: 3px solid #00adb5;
+        cursor: pointer;
+        -webkit-appearance: none;
+        margin-top: -7px;
+        box-shadow: 0 0 8px rgba(0, 173, 181, 0.8);
+        transition: transform 0.1s;
+    }
+
+    .led-slider::-webkit-slider-thumb:hover {
+        transform: scale(1.2);
+    }
+
+    .slider-value {
+        color: #00adb5;
+        font-weight: bold;
+        font-size: 1.2rem;
+        min-width: 50px;
+        text-align: right;
+    }
+
+    /* Styling für den Farbkasten (Color-Picker) */
+    .color-picker-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .color-input {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 70px;
+        height: 70px;
+        background-color: transparent;
+        border: none;
+        cursor: pointer;
+    }
+
+    .color-input::-webkit-color-swatch {
+        border-radius: 12px;
+        border: 2px solid #fff;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    }
+
+    /* Info-Boxen */
+    .info-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #aaa;
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+
+    .info-icon {
+        font-size: 1.5rem;
+    }
+
+    /* Animation */
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+
+<div class="led-dashboard">
+    <div class="led-header">
+        <h2><span>💡</span> LED-Systemsteuerung</h2>
+        <p>Konfiguriere das visuelle Erscheinungsbild deines BarBots im Handumdrehen.</p>
+    </div>
+
+    <div class="form-group">
+        <label for="ledModusSelect">Aktueller Beleuchtungsmodus</label>
+        <select id="ledModusSelect" class="led-select" onchange="handleModusWechsel(this.value)">
+            <option value="rainbow" {% if modus == 'rainbow' %}selected{% endif %}>🌈 Regenbogen (Idle)</option>
+            <option value="auto" {% if modus == 'auto' %}selected{% endif %}>🤖 Automatik (Positionsabhängig)</option>
+            <option value="einheitlich" {% if modus == 'einheitlich' %}selected{% endif %}>🎨 Einheitliche Farbe</option>
+            <option value="aus" {% if modus == 'aus' %}selected{% endif %}>🔌 LEDs vollständig Ausschalten</option>
+        </select>
+    </div>
+
+    <div id="panel-rainbow" class="mode-panel">
+        <h3>Regenbogen-Effekt anpassen</h3>
+        <p>Bestimme, wie schnell die Farben im Ruhezustand durchlaufen sollen.</p>
+        <div class="slider-container">
+            <input type="range" id="regenbogenGeschwindigkeit" class="led-slider" min="5" max="100" value="{{ geschwindigkeit|default(50) }}" oninput="updateSliderWert(this.value)" onchange="speichereGeschwindigkeit(this.value)">
+            <span id="sliderWertAnzeige" class="slider-value">{{ geschwindigkeit|default(50) }}%</span>
+        </div>
+    </div>
+
+    <div id="panel-auto" class="mode-panel">
+        <div class="info-box">
+            <span class="info-icon">💡</span>
+            <span><strong>Info:</strong> Im Automatik-Modus leuchten die LEDs während des Mixens präzise an der Position der jeweiligen Zutat auf. Im Ruhezustand schaltet das System automatisch auf deinen vorherigen Effekt zurück.</span>
+        </div>
+    </div>
+
+    <div id="panel-einheitlich" class="mode-panel">
+        <h3>Farbkasten öffnen</h3>
+        <p>Klicke auf das Farbfeld, um eine statische Beleuchtungsfarbe für das gesamte Gehäuse zu wählen.</p>
+        <div class="color-picker-wrapper">
+            <input type="color" id="ledColorPicker" class="color-input" onchange="speichereFarbe(this.value)">
+            <span style="color: #aaa; font-size: 0.9rem;">Farbe wird sofort live angewendet.</span>
+        </div>
+    </div>
+
+    <div id="panel-aus" class="mode-panel">
+        <div class="info-box">
+            <span class="info-icon">🔌</span>
+            <span>Die LED-Streifen sind deaktiviert. Wähle einen anderen Modus im Dropdown, um sie wieder zum Leben zu erwecken.</span>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Führt die Initialisierung direkt beim Laden des SPA-Snippets aus
+    (function initDashboard() {
+        const aktuellerModus = document.getElementById('ledModusSelect').value;
+        
+        // Zeige sofort das richtige Panel für den geladenen Modus an
+        zeigePanel(aktuellerModus);
+
+        // Initialisiere den Colorpicker mit dem RGB-Wert aus der Datenbank
+        const picker = document.getElementById('ledColorPicker');
+        if (picker) {
+            const rgbStr = "{{ color|default('0,0,255') }}"; 
+            picker.value = rgbToHex(rgbStr);
+        }
+    })();
+
+    // Schaltet die Sichtbarkeit der einzelnen Panels um
+    function zeigePanel(modus) {
+        // Blende erst einmal alle Panels aus
+        document.querySelectorAll('.mode-panel').forEach(panel => {
+            panel.style.display = 'none';
+        });
+
+        // Blende das passende Panel ein
+        const aktivesPanel = document.getElementById(`panel-${modus}`);
+        if (aktivesPanel) {
+            aktivesPanel.style.display = 'block';
+        }
+    }
+
+    function handleModusWechsel(neuerModus) {
+        zeigePanel(neuerModus);
+
+        // Sende den geänderten Modus an die API
+        fetch('/api/admin/set_led', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ modus: neuerModus })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // WICHTIG: Lädt das Snippet neu, um z.B. den Farbkasten ein- oder auszublenden
+                loadView('/led_content'); 
+            } else {
+                alert("Fehler beim Speichern des Modus: " + data.message);
+            }
+        })
+        .catch(err => console.error("[SPA LED] API-Fehler:", err));
+    }
+
+    // Aktualisiert nur den Text neben dem Slider beim Ziehen (Echtzeit)
+    function updateSliderWert(wert) {
+        document.getElementById('sliderWertAnzeige').innerText = wert + "%";
+    }
+
+    // Sendet die Geschwindigkeit nach dem Loslassen des Sliders an die API
+    function speichereGeschwindigkeit(wert) {
+        fetch('/api/admin/set_led', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                modus: 'rainbow',
+                geschwindigkeit: parseInt(wert, 10) 
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status !== 'success') {
+                alert("Geschwindigkeit konnte nicht hinterlegt werden.");
+            }
+        })
+        .catch(err => console.error("[SPA LED SPEED] Fehler:", err));
+    }
+
+    // Sendet die ausgewählte Hex-Farbe konvertiert als RGB an die API
+    function speichereFarbe(hexColor) {
+        const rgbStr = hexToRgb(hexColor);
+        
+        fetch('/api/admin/set_led', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                modus: 'einheitlich',
+                color: rgbStr 
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status !== 'success') {
+                alert("Farbe wurde nicht übernommen: " + data.message);
+            }
+        })
+        .catch(err => console.error("[SPA LED COLOR] Fehler:", err));
+    }
+
+    /* --- Hilfsfunktionen für die Farbumrechnungen --- */
+    function rgbToHex(rgbString) {
+        const parts = rgbString.split(',').map(num => parseInt(num.trim(), 10));
+        if(parts.length !== 3) return "#00adb5";
+        return "#" + parts.map(x => {
+            const hex = x.toString(16);
+            return hex.length === 1 ? "0" + hex : hex;
+        }).join('');
+    }
+
+    function hexToRgb(hex) {
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+        return `${r},${g},${b}`;
+    }
+</script>

@@ -1,0 +1,30 @@
+<div class="admin-header-bar">
+    <h2 style="margin: 0;">🚰 Zapfstellen verwalten</h2>
+    <button class="btn" onclick="openCreateModal('Zapfstelle')">+ Neue Zapfstelle</button>
+</div>
+
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>SchienenPos</th>
+            <th>Ist Pumpe?</th>
+            <th>Aktion</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for zs in zapfstellen %}
+        <tr>
+            <td><code>{{ zs.ZapfstelleID }}</code></td>
+            <td>{{ zs.SchienenPos }}</td>
+            <td><code>{{ zs.Pumpe }}</code></td>
+            <td>
+                <button class="btn btn-edit" onclick="editItem('Zapfstelle', {{ zs.ZapfstelleID }})">✎</button>
+                <button class="btn btn-delete" onclick="deleteItem('Zapfstelle', {{ zs.ZapfstelleID }})">✖</button>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" style="text-align: center; color: #ff6b6b;">Keine Zapfstellen konfiguriert.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarBot Admin - LED Steuerung</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { padding: 20px; background-color: #f8f9fa; }
+        .led-card {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .clickable { cursor: pointer; }
+        .clickable:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .active-mode {
+            border: 3px solid #0d6efd !important;
+            background-color: #e9ecef;
+        }
+        .rainbow-bg {
+            background: linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3);
+            color: white;
+            text-shadow: 1px 1px 2px black;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>💡 LED Steuerung</h1>
+        <a href="/" class="btn btn-secondary">Zurück zum Dashboard</a>
+    </div>
+
+    <div id="status-alert" class="alert d-none" role="alert"></div>
+
+    <div class="row g-4">
+        
+        <div class="col-md-6">
+            <div class="card led-card clickable h-100 {% if aktueller_modus == 'auto' %}active-mode{% endif %}" onclick="setLedMode('auto', this)">
+                <div class="card-body text-center">
+                    <h2 class="mb-3">🤖</h2>
+                    <h5 class="card-title">Automatik (Position)</h5>
+                    <p class="card-text text-muted">Im Leerlauf: Regenbogen. Beim Mixen: Folgt dem Schlitten.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card led-card clickable h-100 rainbow-bg {% if aktueller_modus == 'rainbow' %}active-mode{% endif %}" onclick="setLedMode('rainbow', this)">
+                <div class="card-body text-center">
+                    <h2 class="mb-3">🌈</h2>
+                    <h5 class="card-title">Regenbogen Dauerhaft</h5>
+                    <p class="card-text">Ein permanenter Farbdurchlauf auf allen LEDs.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card led-card h-100 {% if aktueller_modus == 'einheitlich' %}active-mode{% endif %}" id="card-einheitlich">
+                <div class="card-body text-center">
+                    <h2 class="mb-3">🎨</h2>
+                    <h5 class="card-title">Statische Farbe</h5>
+                    <p class="card-text text-muted">Ganze Bar in einer Farbe (RGB 0-255)</p>
+                    
+                    <div class="input-group mb-3 px-3">
+                        <span class="input-group-text bg-danger text-white">R</span>
+                        <input type="number" id="colorR" class="form-control text-center" min="0" max="255" value="{{ r }}">
+                        
+                        <span class="input-group-text bg-success text-white">G</span>
+                        <input type="number" id="colorG" class="form-control text-center" min="0" max="255" value="{{ g }}">
+                        
+                        <span class="input-group-text bg-primary text-white">B</span>
+                        <input type="number" id="colorB" class="form-control text-center" min="0" max="255" value="{{ b }}">
+                    </div>
+                    
+                    <button class="btn btn-dark w-75" onclick="setLedColor(this)">Farbe setzen</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card led-card clickable h-100 bg-dark text-white {% if aktueller_modus == 'aus' %}active-mode{% endif %}" onclick="setLedMode('aus', this)">
+                <div class="card-body text-center">
+                    <h2 class="mb-3">🌙</h2>
+                    <h5 class="card-title">Ausschalten</h5>
+                    <p class="card-text text-light">Die LEDs bleiben komplett dunkel.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function sendLedRequest(payload, targetCard) {
+        fetch('/api/admin/led', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json())
+        .then(data => {
+            const alertBox = document.getElementById('status-alert');
+            alertBox.classList.remove('d-none', 'alert-success', 'alert-danger');
+            
+            if(data.status === 'success') {
+                document.querySelectorAll('.led-card').forEach(c => c.classList.remove('active-mode'));
+                if(targetCard) targetCard.classList.add('active-mode');
+                
+                alertBox.classList.add('alert-success');
+                alertBox.innerText = data.message;
+            } else {
+                alertBox.classList.add('alert-danger');
+                alertBox.innerText = "Fehler: " + data.message;
+            }
+            setTimeout(() => alertBox.classList.add('d-none'), 3000);
+        })
+        .catch(err => alert("Netzwerkfehler beim Senden des LED-Befehls."));
+    }
+
+    function setLedMode(modus, cardElement) {
+        sendLedRequest({ modus: modus }, cardElement);
+    }
+
+    function setLedColor(btnElement) {
+        // Die nächstgelegene Karte ermitteln, in der der Button liegt
+        const cardElement = btnElement.closest('.led-card');
+        const r = document.getElementById('colorR').value || 0;
+        const g = document.getElementById('colorG').value || 0;
+        const b = document.getElementById('colorB').value || 0;
+        
+        sendLedRequest({
+            modus: 'einheitlich',
+            r: parseInt(r),
+            g: parseInt(g),
+            b: parseInt(b)
+        }, cardElement);
+    }
+</script>
+
+</body>
+</html>

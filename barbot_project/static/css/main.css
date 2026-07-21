@@ -1,0 +1,286 @@
+/* Globale Definitionen */
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; 
+    margin: 0; 
+    padding: 0; 
+    background: #1e1e1e; 
+    color: #f5f5f5; 
+}
+
+/* Navigationsleiste mit Burger-Button */
+nav { 
+    display: flex; 
+    align-items: center; 
+    justify-content: flex-start;
+    background: #2d2d2d; 
+    padding: 0.6rem 1.2rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.burger-icon {
+    font-size: 1.8rem;
+    cursor: pointer;
+    color: #4CAF50;
+    padding: 4px 10px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.burger-icon:hover {
+    background: #3a3a3a;
+}
+
+.nav-title {
+    margin: 0 0 0 15px;
+    font-size: 1.4rem;
+    letter-spacing: 1px;
+}
+
+/* Die ausklappbare Sidebar */
+.side-menu {
+    height: 100%;
+    width: 0; 
+    position: fixed;
+    z-index: 1000;
+    top: 0;
+    left: 0;
+    background-color: #121212;
+    overflow-x: hidden;
+    transition: width 0.3s ease; 
+    padding-top: 60px;
+    box-shadow: 3px 0 15px rgba(0,0,0,0.5);
+}
+
+.side-menu a {
+    padding: 14px 24px;
+    text-decoration: none;
+    font-size: 1.15rem;
+    color: #b3b3b3;
+    display: block;
+    transition: 0.2s;
+    cursor: pointer;
+}
+
+.side-menu a:hover {
+    color: #4CAF50;
+    background-color: #252525;
+}
+
+.side-menu .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 2.2rem;
+    padding: 0;
+    color: #888;
+}
+
+.side-menu .close-btn:hover {
+    color: #fff;
+    background: none;
+}
+
+/* --- NEU: Sub-Links im Burger-Menue --- */
+.side-menu .sub-link {
+    padding: 10px 24px 10px 40px; /* Eingerueckt */
+    font-size: 1rem;
+    color: #888;
+}
+.side-menu .sub-link:hover {
+    color: #4CAF50;
+    background-color: transparent;
+}
+
+/* Haupt-Content-Fenster */
+#app-content { 
+    padding: 2.5rem 1rem; 
+    max-width: 700px; 
+    margin: 0 auto; 
+    text-align: center; 
+}
+
+/* Buttons */
+button, .btn { 
+    padding: 12px 24px; 
+    font-size: 1rem; 
+    background: #4CAF50; 
+    border: none; 
+    color: white; 
+    cursor: pointer; 
+    border-radius: 6px;
+    font-weight: bold;
+    transition: background 0.2s, transform 0.1s;
+}
+
+button:hover, .btn:hover { 
+    background: #45a049; 
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+/* Cocktail Menü Karten */
+.cocktail-list {
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.cocktail-card {
+    border: 1px solid #333; 
+    padding: 20px; 
+    border-radius: 8px;
+    background: #252525;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.cocktail-card h3 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+/* Hilfsklassen */
+.text-success { color: #4CAF50; }
+.mt-20 { margin-top: 20px; }
+
+/* --- NEU: Globale Admin-Tabellen Styles --- */
+.admin-header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 40px;
+    background: #252525;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.admin-table th {
+    background-color: #2d2d2d;
+    color: #4CAF50;
+    text-align: left;
+    padding: 12px;
+    font-weight: bold;
+    border-bottom: 2px solid #1e1e1e;
+}
+.admin-table td {
+    padding: 12px;
+    border-bottom: 1px solid #333;
+    color: #ddd;
+    text-align: left;
+}
+.admin-table tr:hover {
+    background-color: #2a2a2a;
+}
+.badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+.badge-pumpe { background-color: #2980b9; color: white; }
+    
+.badge-schiene { background-color: #d35400; color: white; }
+    
+.btn-toggle {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+.btn-active { background-color: #2ecc71; color: #fff; }
+.btn-active:hover { background-color: #27ae60; }
+.btn-inactive { background-color: #e74c3c; color: #fff; }
+.btn-inactive:hover { background-color: #c0392b; }
+
+.btn-edit { background-color: #f39c12; color: #fff; padding: 6px 10px; font-size: 0.85rem; margin-right: 5px; }
+.btn-edit:hover { background-color: #e67e22; }
+.btn-delete { background-color: #c0392b; color: #fff; padding: 6px 10px; font-size: 0.85rem; }
+.btn-delete:hover { background-color: #a93226; }
+
+/* --- NEU: CRUD Modal Styles (Passend zum BarBot Dark-Theme) --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 2000;
+    display: none; /* Standardmäßig ausgeblendet */
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-box {
+    background: #2d2d2d;
+    border: 1px solid #444;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 460px;
+    padding: 22px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    text-align: left;
+}
+
+.modal-box h3 {
+    margin-top: 0;
+    color: #4CAF50;
+    font-size: 1.4rem;
+    border-bottom: 1px solid #444;
+    padding-bottom: 12px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    color: #bbb;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px;
+    background: #1e1e1e;
+    border: 1px solid #444;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+.form-control:focus {
+    border-color: #4CAF50;
+    outline: none;
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.btn-secondary {
+    background: #444;
+}
+.btn-secondary:hover {
+    background: #555;
+}

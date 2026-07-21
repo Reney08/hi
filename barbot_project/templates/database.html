@@ -1,0 +1,181 @@
+<h1>🗄️ BarBot Datenbank-Zustand</h1>
+<p style="color: #aaa; margin-bottom: 30px;">Verwalte hier die Verfuegbarkeit deiner Cocktails und Zutaten live.</p>
+
+<style>
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 40px;
+        background: #252525;
+        border-radius: 6px;
+        overflow: hidden;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .admin-table th {
+        background-color: #2d2d2d;
+        color: #4CAF50;
+        text-align: left;
+        padding: 12px;
+        font-weight: bold;
+        border-bottom: 2px solid #1e1e1e;
+    }
+    .admin-table td {
+        padding: 12px;
+        border-bottom: 1px solid #333;
+        color: #ddd;
+        text-align: left;
+    }
+    .admin-table tr:hover {
+        background-color: #2a2a2a;
+    }
+    .badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 0.85rem;
+        font-weight: bold;
+    }
+    .badge-pumpe { background-color: #2980b9; color: white; }
+    .badge-schiene { background-color: #d35400; color: white; }
+    
+    .btn-toggle {
+        padding: 6px 14px;
+        font-size: 0.85rem;
+        border-radius: 4px;
+        border: none;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background 0.2s;
+    }
+    .btn-active { background-color: #2ecc71; color: #fff; }
+    .btn-active:hover { background-color: #27ae60; }
+    .btn-inactive { background-color: #e74c3c; color: #fff; }
+    .btn-inactive:hover { background-color: #c0392b; }
+
+    h2 { text-align: left; font-size: 1.4rem; color: #fff; margin-bottom: 10px; }
+</style>
+
+<h2>🍹 Tabelle: Cocktail</h2>
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Aktion</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cocktail in cocktails %}
+        <tr>
+            <td><code>{{ cocktail.CocktailID }}</code></td>
+            <td><strong>{{ cocktail.Name }}</strong></td>
+            <td>
+                {% if cocktail.Verfuegbar == 1 %}
+                <span style="color: #2ecc71; font-weight: bold;">● Sichtbar</span>
+                {% else %}
+                <span style="color: #e74c3c; font-weight: bold;">○ Deaktiviert</span>
+                {% endif %}
+            </td>
+            <td>
+                <button class="btn-toggle {% if cocktail.Verfuegbar == 1 %}btn-active{% else %}btn-inactive{% endif %}" 
+                        onclick="toggleItem('cocktail', {{ cocktail.CocktailID }})">
+                    {% if cocktail.Verfuegbar == 1 %}Ausschalten{% else %}Einschalten{% endif %}
+                </button>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" style="text-align: center; color: #ff6b6b;">Keine Cocktails registriert.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2>🍋 Tabelle: Zutat und Hardware-Zuweisung</h2>
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Zuweisungstyp</th>
+            <th>Status</th>
+            <th>Aktion</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for z in zutaten %}
+        <tr>
+            <td><code>{{ z.ZutatID }}</code></td>
+            <td><strong>{{ z.Name }}</strong></td>
+            <td>
+                {% if z.Pumpe == 1 %}
+                <span class="badge badge-pumpe">Relais-Pumpe (Nr. {{ z.PumpenNR }})</span>
+                {% else %}
+                <span class="badge badge-schiene">Linear-Achse (Pos. {{ z.SchienenPos }})</span>
+                {% endif %}
+            </td>
+            <td>
+                {% if z.Verfuegbar == 1 %}
+                <span style="color: #2ecc71; font-weight: bold;">● Vorraetig</span>
+                {% else %}
+                <span style="color: #e74c3c; font-weight: bold;">○ Leer / Gesperrt</span>
+                {% endif %}
+            </td>
+            <td>
+                <button class="btn-toggle {% if z.Verfuegbar == 1 %}btn-active{% else %}btn-inactive{% endif %}" 
+                        onclick="toggleItem('zutat', {{ z.ZutatID }})">
+                    {% if z.Verfuegbar == 1 %}Als Leer markieren{% else %}Als Vorraetig markieren{% endif %}
+                </button>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align: center; color: #ff6b6b;">Keine Zutaten registriert.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h2>🚰 Tabelle: Zapfstelle (Rohwerte)</h2>
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>Zapfstelle-ID</th>
+            <th>SchienenPos</th>
+            <th>Ist Pumpe?</th>
+            <th>PumpenNR</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for zs in zapfstellen %}
+        <tr>
+            <td><code>{{ zs.ZapfstelleID }}</code></td>
+            <td>{{ zs.SchienenPos }}</td>
+            <td><code>{{ zs.Pumpe }}</code></td>
+            <td>{{ zs.PumpenNR if zs.PumpenNR is not none else '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" style="text-align: center; color: #ff6b6b;">Keine Zapfstellen konfiguriert.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    function toggleItem(itemType, itemId) {
+        console.log("[ADMIN] Schalte " + itemType + " mit ID " + itemId + " um...");
+        
+        fetch('/api/toggle_availability', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: itemType, id: itemId })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                loadView('/database_content');
+            } else {
+                alert("Fehler beim Umschalten: " + data.message);
+            }
+        })
+        .catch(err => {
+            console.error("Netzwerkfehler beim Umschalten:", err);
+            alert("Server-Verbindungsfehler.");
+        });
+    }
+</script>

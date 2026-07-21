@@ -1,0 +1,36 @@
+<div class="admin-header-bar">
+    <h2>📖 Rezepte verwalten</h2>
+    <button class="btn" onclick="openCreateModal('Rezept')">➕ Rezeptschritt hinzufügen</button>
+</div>
+
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Cocktail</th>
+            <th>Zutat</th>
+            <th>Menge</th>
+            <th>Aktionen</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in rezepte %}
+        <tr>
+            <td>{{ r.ID }}</td>
+            <td><strong>{{ r.CocktailName }}</strong></td>
+            <td>{{ r.ZutatName }}</td>
+            <td>{{ r.Menge }}</td>
+            <td>
+                <button class="btn btn-edit" onclick="editItem('Rezept', '{{ r.RezeptID }}')">✎</button>
+                <button class="btn btn-delete" onclick="deleteItem('Rezept', '{{ r.RezeptID }}')">🗑️</button>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="5" style="text-align: center; padding: 20px;">
+                Noch keine Rezepte hinterlegt.
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

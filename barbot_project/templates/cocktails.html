@@ -1,0 +1,13 @@
+<h1>🍹 Unsere Cocktailkarte</h1>
+<p style="color: #aaa;">Wähle deinen Drink. Der BarBot bereitet ihn frisch für dich zu.</p>
+
+<div class="cocktail-list">
+    {% for cocktail in cocktails %}
+        <div class="cocktail-card">
+            <h3>{{ cocktail.Name }}</h3>
+            <button onclick="starteMixvorgang({{ cocktail.CocktailID }})">Mixen</button>
+        </div>
+    {% else %}
+        <p style="color: #ff6b6b;">Keine Cocktails in der Datenbank registriert.</p>
+    {% endfor %}
+</div>

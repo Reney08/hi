@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarBot API und Hardware Dokumentation</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/docs.css') }}">
+</head>
+<body>
+    <header class="header">
+        <h1>Anleitung und API-Spezifikation: BarBot Steuerung</h1>
+        <p>Diese Dokumentation beschreibt die Schnittstellen zwischen Web-App, Hauptserver (Flask) und der ESP-Hardware.</p>
+    </header>
+
+    <main class="container">
+        
+        <section class="category">
+            <h2 style="color: #e67e22; border-bottom-color: #e67e22;">🛠️ Hardware-Spezifikation fuer den ESP</h2>
+            <p>Der ESP muss als HTTP-Server auf Port <code>8080</code> laufen. Er verarbeitet ausschliesslich nackte Zahlenwerte (Integers). Es werden <strong>keine Text- oder Rezeptdaten</strong> an die Hardware uebermittelt, um die Firmware so minimalistisch und stabil wie moeglich zu halten.</p>
+            
+            <div class="endpoint" style="border-left: 5px solid #e67e22;">
+                <div class="endpoint-header" style="background: #fdf2e9;">
+                    <span class="method post" style="background-color: #e67e22;">POST</span>
+                    <span class="path">/fahre</span>
+                </div>
+                <div class="endpoint-body">
+                    <p><strong>Beschreibung:</strong> Wird aufgerufen, wenn der BarBot eine Linearachse/Schlitten bewegen und ein Servo-Ventil oeffnen soll.</p>
+                    
+                    <h4>Erwarteter Request-Body (JSON):</h4>
+                    <pre><code>{
+  "position": 4,   
+  "menge": 50      
+}</code></pre>
+
+                    <h4>Erwartete Antwort (Response):</h4>
+                    <p>Der ESP muss die mechanische Aktion komplett abschliessen, bevor er antwortet. Nach Erfolg sendet er:</p>
+                    <ul>
+                        <li><span class="status-code success">HTTP 200 OK</span> mit Body: <code>{"status": "done"}</code></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="endpoint" style="border-left: 5px solid #e67e22;">
+                <div class="endpoint-header" style="background: #fdf2e9;">
+                    <span class="method post" style="background-color: #e67e22;">POST</span>
+                    <span class="path">/pumpe</span>
+                </div>
+                <div class="endpoint-body">
+                    <p><strong>Beschreibung:</strong> Wird aufgerufen, um eine stationaere Fluessigkeitspumpe per Relais fuer eine bestimmte Menge anzusteuern.</p>
+                    
+                    <h4>Erwarteter Request-Body (JSON):</h4>
+                    <pre><code>{
+  "pumpen_nr": 2,  
+  "menge": 120     
+}</code></pre>
+
+                    <h4>Erwartete Antwort (Response):</h4>
+                    <p>Der ESP laesst die Pumpe laufen. Erst wenn der Pumpvorgang beendet ist, antwortet er:</p>
+                    <ul>
+                        <li><span class="status-code success">HTTP 200 OK</span> mit Body: <code>{"status": "done"}</code></li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="category">
+            <h2>🌐 Interne Web-App API (Flask-Endpunkte)</h2>
+            <p>Diese Endpunkte werden vom Frontend aufgerufen, um den Zustand des Mixvorgangs zu verwalten.</p>
+            
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method post">POST</span>
+                    <span class="path">/api/order</span>
+                </div>
+                <div class="endpoint-body">
+                    <p><strong>Beschreibung:</strong> Startet einen neuen Mixvorgang fuer einen spezifischen Cocktail.</p>
+                    <h4>Request-Body (JSON):</h4>
+                    <pre><code>{ "cocktail_id": 1 }</code></pre>
+                    <h4>Antwort bei Erfolg (HTTP 200):</h4>
+                    <pre><code>{ "status": "started", "total_steps": 3 }</code></pre>
+                </div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method get">GET</span>
+                    <span class="path">/api/next_step</span>
+                </div>
+                <div class="endpoint-body">
+                    <p><strong>Beschreibung:</strong> Holt den naechsten Schritt aus der Warteschlange, triggert den ESP via POST und antwortet dem Frontend.</p>
+                    <h4>Moegliche Antworten (HTTP 200):</h4>
+                    <pre><code>{
+  "status": "success",
+  "zutat_added": "Orangensaft",
+  "progress": 1,
+  "total": 3
+}</code></pre>
+                </div>
+            </div>
+        </section>
+
+    </main>
+</body>
+</html>

@@ -1,0 +1,11 @@
+# --- Web-Framework & HTTP-Kommunikation ---
+Flask>=3.0.0
+requests>=2.31.0
+
+# --- Dokumentation ---
+Sphinx>=7.2.0
+sphinx-rtd-theme>=2.0.0
+sphinxcontrib-httpdomain>=1.8.1
+
+# --- Code-Qualität & Typisierung (Optional, aber empfohlen)
+typing-extensions>=4.8.0

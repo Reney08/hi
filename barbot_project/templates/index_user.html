@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarBot Web-App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+
+    <nav>
+        <span class="burger-icon" onclick="toggleMenu()">☰</span>
+        <h1 class="nav-title">🤖 BarBot Control</h1>
+    </nav>
+
+    <div id="sideMenu" class="side-menu">
+        <a class="close-btn" onclick="toggleMenu()">&times;</a>
+        <a onclick="loadView('/home_content'); toggleMenu()">🏠 Startseite</a>
+        <a onclick="loadView('/cocktails'); toggleMenu()">🍹 Cocktail Menu</a>
+        
+        <hr style="border-color: #222; margin: 15px 20px;">
+    </div>
+
+    <main id="app-content">
+        <h2>System wird geladen...</h2>
+    </main>
+
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById("sideMenu");
+            menu.style.width = (menu.style.width === "260px") ? "0" : "260px";
+        }
+
+        function loadView(route) {
+            fetch(route)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('app-content').innerHTML = html;
+                })
+                .catch(error => console.error("[FRONTEND] Fehler:", error));
+        }
+
+        window.onload = () => loadView('/home_content');
+
+        // --- MIX-LOGIK-STEUERUNG (Unveraendert) ---
+        function starteMixvorgang(cocktailId) {
+            document.getElementById('app-content').innerHTML = "<h2>⏳ Mixauftrag gesendet. Warte auf Bestaetigung...</h2>";
+            fetch('/api/order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cocktail_id: cocktailId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'started') {
+                    fuehreNaechstenSchrittAus();
+                } else {
+                    alert("Misch-Fehler: " + data.message);
+                    loadView('/cocktails');
+                }
+            })
+            .catch(err => {
+                alert("Server antwortet nicht.");
+                loadView('/cocktails');
+            });
+        }
+
+        function fuehreNaechstenSchrittAus() {
+            fetch('/api/next_step')
+            .then(res => res.json())
+            .then(data => {
+                // WICHTIG: Das Backend sendet "mixing" während es arbeitet
+                if (data.status === 'mixing') {
+                    // Zeige im UI an, dass gearbeitet wird (greift auf die Daten aus dem Backend zu)
+                    let position = data.current_step.SchienenPos || "?";
+                    let menge = data.current_step.Menge || "?";
+                    
+                    document.getElementById('app-content').innerHTML = `
+                        <h2>🍹 Cocktail wird gemixt...</h2>
+                        <p style="font-size: 1.3rem;">Fahre zu Position <strong class="text-success">${position}</strong></p>
+                        <p style="color: #888;">Fülle ${menge} ml ab...</p>
+                    `;
+                    
+                    // Rufe die Funktion sofort wieder auf, um den nächsten Schritt anzufordern!
+                    fuehreNaechstenSchrittAus(); 
+                } 
+                else if (data.status === 'finished') {
+                    loadView('/finished'); // Oder was auch immer du am Ende anzeigen willst
+                } 
+                else {
+                    alert("Mixvorgang abgebrochen: " + data.message);
+                    loadView('/cocktails');
+                }
+            })
+            .catch(err => {
+                console.error("[FRONTEND] Fehler beim Mixen:", err);
+                alert("Netzwerkfehler während des Mixens.");
+                loadView('/cocktails');
+            });
+        }
+    
+    </script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<div class="admin-header-bar">
+    <h2 style="margin: 0;">🍹 Cocktails verwalten</h2>
+    <button class="btn" onclick="openCreateModal('Cocktail')">+ Neuen Cocktail</button>
+</div>
+
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Aktion</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for cocktail in cocktails %}
+        <tr>
+            <td><code>{{ cocktail.CocktailID }}</code></td>
+            <td><strong>{{ cocktail.Name }}</strong></td>
+            <td>
+                {% if cocktail.Verfuegbar == 1 %}
+                <span style="color: #2ecc71; font-weight: bold;">● Sichtbar</span>
+                {% else %}
+                <span style="color: #e74c3c; font-weight: bold;">○ Deaktiviert</span>
+                {% endif %}
+            </td>
+            <td>
+                <button class="btn btn-edit" onclick="editItem('Cocktail', {{ cocktail.CocktailID }})">✎</button>
+                <button class="btn btn-delete" onclick="deleteItem('Cocktail', {{ cocktail.CocktailID }})">✖</button>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" style="text-align: center; color: #ff6b6b;">Keine Cocktails registriert.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>

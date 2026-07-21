@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BarBot Web-App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+
+    <nav>
+        <span class="burger-icon" onclick="toggleMenu()">☰</span>
+        <h1 class="nav-title">🤖 BarBot Control</h1>
+    </nav>
+
+    <div id="sideMenu" class="side-menu">
+        <a class="close-btn" onclick="toggleMenu()">&times;</a>
+        <a onclick="loadView('/home_content'); toggleMenu()">🏠 Startseite</a>
+        <a onclick="loadView('/cocktails'); toggleMenu()">🍹 Cocktail Menu</a>
+        
+        <hr style="border-color: #222; margin: 15px 20px;">
+        
+        <a onclick="loadView('/database_content'); toggleMenu()">📂 Datenbank Übersicht</a>
+        <a class="sub-link" onclick="loadView('/admin/cocktails'); toggleMenu()">↳ 🍹 Cocktails verwalten</a>
+        <a class="sub-link" onclick="loadView('/admin/zutaten'); toggleMenu()">↳ 🍋 Zutaten verwalten</a>
+        <a class="sub-link" onclick="loadView('/admin/zapfstellen'); toggleMenu()">↳ 🚰 Zapfstellen verwalten</a>
+        <a class="sub-link" onclick="loadView('/admin/rezepte'); toggleMenu()">↳ 📖 Rezepte verwalten</a>
+        <a class="sub-link" onclick="loadView('/admin/reinigung'); toggleMenu()">↳ 🧼 Pumpen-Reinigung</a>
+        
+        <hr style="border-color: #333; margin: 15px 20px;">
+        <p style="color: #666; padding-left: 20px; font-size: 0.8rem; text-transform: uppercase; margin: 0 0 5px 0;">Administration</p>
+        <a onclick="loadView('/led_content'); toggleMenu()">💡 LED Steuerung</a>
+
+        <hr style="border-color: #222; margin: 15px 20px;">
+        <a href="/docs" target="_blank" onclick="toggleMenu()">📄 API Dokumentation</a>
+    </div>
+
+    <main id="app-content">
+        <h2>System wird geladen...</h2>
+    </main>
+
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById("sideMenu");
+            menu.style.width = (menu.style.width === "260px") ? "0" : "260px";
+        }
+
+        function loadView(route) {
+            fetch(route)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('app-content').innerHTML = html;
+                })
+                .catch(error => console.error("[FRONTEND] Fehler:", error));
+        }
+
+        window.onload = () => loadView('/home_content');
+
+        // --- MIX-LOGIK-STEUERUNG (Unveraendert) ---
+        function starteMixvorgang(cocktailId) {
+            document.getElementById('app-content').innerHTML = "<h2>⏳ Mixauftrag gesendet. Warte auf Bestaetigung...</h2>";
+            fetch('/api/order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cocktail_id: cocktailId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'started') {
+                    fuehreNaechstenSchrittAus();
+                } else {
+                    alert("Misch-Fehler: " + data.message);
+                    loadView('/cocktails');
+                }
+            })
+            .catch(err => {
+                alert("Server antwortet nicht.");
+                loadView('/cocktails');
+            });
+        }
+
+        function fuehreNaechstenSchrittAus() {
+            fetch('/api/next_step')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('app-content').innerHTML = `
+                        <h2>🍹 Cocktail wird gemixt...</h2>
+                        <p style="font-size: 1.3rem;">Fuege hinzu: <strong class="text-success">${data.zutat_added}</strong></p>
+                        <p style="color: #888;">Zutat ${data.progress} von ${data.total}</p>
+                    `;
+                    fuehreNaechstenSchrittAus(); 
+                } 
+                else if (data.status === 'finished') {
+                    loadView('/finished');
+                } 
+                else {
+                    alert("Mixvorgang abgebrochen: " + data.message);
+                    loadView('/cocktails');
+                }
+            })
+            .catch(err => {
+                alert("Netzwerkfehler waehrend des Mixens.");
+                loadView('/cocktails');
+            });
+        }
+        
+        function closeModal() {
+            document.getElementById('adminModal').style.display = 'none';
+            document.getElementById('adminForm').reset();
+        }
+
+        function openCreateModal(type) {
+            document.getElementById('modalTitle').innerText = `➕ ${type} neu anlegen`;
+            document.getElementById('formType').value = type;
+            document.getElementById('formId').value = ''; 
+            generateFormFields(type, {});
+        }
+
+        function editItem(type, id) {
+            console.log(`[CRUD] Starte Bearbeitung für ${type} mit ID ${id}`);
+            try {
+                document.getElementById('modalTitle').innerText = `✎ ${type} bearbeiten (ID: ${id})`;
+                document.getElementById('formType').value = type;
+                document.getElementById('formId').value = id;
+            } catch (error) {
+                console.error("[CRUD] FEHLER: Modal-Elemente nicht gefunden!", error);
+                alert("Fehler: Das Popup-Fenster wurde im HTML nicht gefunden.");
+                return;
+            }
+            
+            fetch(`/api/admin/get/${type}/${id}`)
+                .then(res => res.json())
+                .then(response => {
+                    if (response.status === 'success') {
+                        generateFormFields(type, response.data);
+                    } else {
+                        alert("Fehler beim Laden aus der Datenbank: " + response.message);
+                    }
+                })
+                .catch(err => alert("Verbindungsfehler zum Server."));
+        }
+
+        function generateFormFields(type, data) {
+            const container = document.getElementById('formFields');
+            container.innerHTML = '';
+            
+            if (type === 'Cocktail') {
+                container.innerHTML = `
+                    <div class="form-group">
+                        <label for="c_name">Cocktail-Name</label>
+                        <input type="text" id="c_name" class="form-control" value="${data.Name || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="c_verfuegbar">Sichtbarkeit im Menü</label>
+                        <select id="c_verfuegbar" class="form-control">
+                            <option value="1" ${data.Verfuegbar === 1 ? 'selected' : ''}>Aktiv / Sichtbar</option>
+                            <option value="0" ${data.Verfuegbar === 0 ? 'selected' : ''}>Deaktiviert / Versteckt</option>
+                        </select>
+                    </div>
+                `;
+                document.getElementById('adminModal').style.display = 'flex';
+            } 
+            else if (type === 'Zutat') {
+                fetch('/api/admin/list/Zapfstelle')
+                    .then(res => res.json())
+                    .then(zsResponse => {
+                        let options = '<option value="">-- Keine Zapfstelle zugewiesen --</option>';
+                        if (zsResponse.status === 'success') {
+                            zsResponse.data.forEach(zs => {
+                                const info = zs.Pumpe === 1 ? `Relais-Pumpe Nr. ${zs.PumpenNR}` : `Linearachse Pos. ${zs.SchienenPos}`;
+                                options += `<option value="${zs.ZapfstelleID}" ${data.Zapfstelle === zs.ZapfstelleID ? 'selected' : ''}>ID ${zs.ZapfstelleID} [${info}]</option>`;
+                            });
+                        }
+                        container.innerHTML = `
+                            <div class="form-group">
+                                <label for="z_name">Name der Zutat</label>
+                                <input type="text" id="z_name" class="form-control" value="${data.Name || ''}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="z_alk">Alkoholhaltig?</label>
+                                <select id="z_alk" class="form-control">
+                                    <option value="0" ${data.Alkohol === 0 ? 'selected' : ''}>Nein</option>
+                                    <option value="1" ${data.Alkohol === 1 ? 'selected' : ''}>Ja</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="z_verfuegbar">Lager-Status</label>
+                                <select id="z_verfuegbar" class="form-control">
+                                    <option value="1" ${data.Verfuegbar === 1 ? 'selected' : ''}>Vorrätig</option>
+                                    <option value="0" ${data.Verfuegbar === 0 ? 'selected' : ''}>Leer / Gesperrt</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="z_zapfstelle">Hardware-Zuweisung (Zapfstelle)</label>
+                                <select id="z_zapfstelle" class="form-control">${options}</select>
+                            </div>
+                        `;
+                        document.getElementById('adminModal').style.display = 'flex';
+                    });
+            } 
+            else if (type === 'Zapfstelle') {
+                container.innerHTML = `
+                    <div class="form-group">
+                        <label for="zs_pos">Schienen-Position</label>
+                        <input type="number" id="zs_pos" class="form-control" value="${data.SchienenPos || 0}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="zs_pumpe">Ansteuerungstyp</label>
+                        <select id="zs_pumpe" class="form-control" onchange="togglePumpField(this.value)">
+                            <option value="0" ${data.Pumpe === 0 ? 'selected' : ''}>Linear-Achse</option>
+                            <option value="1" ${data.Pumpe === 1 ? 'selected' : ''}>Feste Relais-Pumpe</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="pumpNrGroup" style="display: ${data.Pumpe === 1 ? 'block' : 'none'};">
+                        <label for="zs_pumpennr">Pumpen-Index / GPIO-Pin</label>
+                        <input type="number" id="zs_pumpennr" class="form-control" value="${data.PumpenNR !== null && data.PumpenNR !== undefined ? data.PumpenNR : ''}">
+                    </div>
+                `;
+                document.getElementById('adminModal').style.display = 'flex';
+            }
+            else if (type === 'Rezept') {
+                Promise.all([
+                    fetch('/api/admin/list/Cocktail').then(res => res.json()),
+                    fetch('/api/admin/list/Zutat').then(res => res.json())
+                ])
+                .then(([cocktailRes, zutatRes]) => {
+                    let cocktailOptions = '<option value="">-- Cocktail wählen --</option>';
+                    if (cocktailRes.status === 'success') {
+                        cocktailRes.data.forEach(c => {
+                            cocktailOptions += `<option value="${c.CocktailID}" ${data.CocktailID === c.CocktailID ? 'selected' : ''}>${c.Name}</option>`;
+                        });
+                    }
+                    
+                    let zutatOptions = '<option value="">-- Zutat wählen --</option>';
+                    if (zutatRes.status === 'success') {
+                        zutatRes.data.forEach(z => {
+                            zutatOptions += `<option value="${z.ZutatID}" ${data.ZutatID === z.ZutatID ? 'selected' : ''}>${z.Name}</option>`;
+                        });
+                    }
+
+                    container.innerHTML = `
+                        <div class="form-group">
+                            <label for="r_cocktail">Zu welchem Cocktail gehört das?</label>
+                            <select id="r_cocktail" class="form-control" required>${cocktailOptions}</select>
+                        </div>
+                        <div class="form-group">
+                            <label for="r_zutat">Welche Zutat soll rein?</label>
+                            <select id="r_zutat" class="form-control" required>${zutatOptions}</select>
+                        </div>
+                        <div class="form-group">
+                            <label for="r_menge">Menge (ml)</label>
+                            <input type="number" id="r_menge" class="form-control" value="${data.Menge || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="r_pos">Schritt-Reihenfolge (Position)</label>
+                            <input type="number" id="r_pos" class="form-control" value="${data.RezeptPos || ''}" placeholder="Optional (z.B. 1, 2, 3)">
+                        </div>
+                    `;
+                    document.getElementById('adminModal').style.display = 'flex';
+                })
+                .catch(err => alert("Fehler beim Laden der Dropdown-Daten."));
+            }
+        }
+
+        function togglePumpField(val) {
+            document.getElementById('pumpNrGroup').style.display = (val === "1") ? "block" : "none";
+            if (val === "0") document.getElementById('zs_pumpennr').value = '';
+        }
+
+        function submitAdminForm(event) {
+            event.preventDefault();
+            const type = document.getElementById('formType').value;
+            const id = document.getElementById('formId').value;
+            let payload = { type: type, id: id };
+            
+            if (type === 'Cocktail') {
+                payload.Name = document.getElementById('c_name').value;
+                payload.Verfuegbar = parseInt(document.getElementById('c_verfuegbar').value);
+            } else if (type === 'Zutat') {
+                payload.Name = document.getElementById('z_name').value;
+                payload.Alkohol = parseInt(document.getElementById('z_alk').value);
+                payload.Verfuegbar = parseInt(document.getElementById('z_verfuegbar').value);
+                const zsVal = document.getElementById('z_zapfstelle').value;
+                payload.Zapfstelle = zsVal === "" ? null : parseInt(zsVal);
+            } else if (type === 'Zapfstelle') {
+                payload.SchienenPos = parseInt(document.getElementById('zs_pos').value);
+                payload.Pumpe = parseInt(document.getElementById('zs_pumpe').value);
+                const pNrVal = document.getElementById('zs_pumpennr').value;
+                payload.PumpenNR = (payload.Pumpe === 1 && pNrVal !== "") ? parseInt(pNrVal) : null;
+            } else if (type === 'Rezept') {
+                payload.CocktailID = parseInt(document.getElementById('r_cocktail').value);
+                payload.ZutatID = parseInt(document.getElementById('r_zutat').value);
+                payload.Menge = parseInt(document.getElementById('r_menge').value);
+                const posVal = document.getElementById('r_pos').value;
+                payload.RezeptPos = posVal === "" ? null : parseInt(posVal);
+            }
+            
+            fetch('/api/admin/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    closeModal();
+                    const routes = { 'Cocktail': '/admin/cocktails', 'Zutat': '/admin/zutaten', 'Zapfstelle': '/admin/zapfstellen', 'Rezept': '/admin/rezepte' };
+                    loadView(routes[type]);
+                } else {
+                    alert("Fehler beim Speichern: " + data.message);
+                }
+            })
+            .catch(err => alert("Netzwerkfehler beim Speichern."));
+        }
+
+        function deleteItem(type, id) {
+            if (confirm(`Möchtest du diesen Eintrag (${type} mit ID: ${id}) wirklich unwiderruflich löschen?`)) {
+                fetch('/api/admin/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: type, id: id })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        const routes = { 'Cocktail': '/admin/cocktails', 'Zutat': '/admin/zutaten', 'Zapfstelle': '/admin/zapfstellen', 'Rezept': '/admin/rezepte' };
+                        loadView(routes[type]);
+                    } else {
+                        alert("Fehler beim Löschen: " + data.message);
+                    }
+                })
+                .catch(err => alert("Netzwerkfehler beim Löschen."));
+            }
+        }
+
+        // ==========================================
+        // ✨ NEU: ZENTRALE REINIGUNGS-STEUERUNG
+        // ==========================================
+        function toggleAllPumps(master) {
+            const checkboxes = document.querySelectorAll('input[name="pump_select"]');
+            checkboxes.forEach(cb => cb.checked = master.checked);
+        }
+
+        function starteReinigung() {
+            console.log("[DEBUG] Reinigung gestartet.");
+
+            const selectedCheckboxes = document.querySelectorAll('input[name="pump_select"]:checked');
+            if (selectedCheckboxes.length === 0) {
+                alert("Bitte wähle mindestens eine Pumpe aus, die gereinigt werden soll!");
+                return;
+            }
+
+            const pumpenListe = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+
+            document.getElementById('cleaningForm').style.opacity = '0.3';
+            document.getElementById('startCleaningBtn').disabled = true;
+            
+            const statusBox = document.getElementById('cleaningStatus');
+            const countdownDisplay = document.getElementById('cleaningCountdown');
+            statusBox.style.display = 'block';
+            
+            let timeLeft = 20;
+            countdownDisplay.innerText = timeLeft;
+
+            const timer = setInterval(() => {
+                timeLeft--;
+                if (timeLeft >= 0) {
+                    countdownDisplay.innerText = timeLeft;
+                }
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                }
+            }, 1000);
+
+            fetch('/api/admin/reinigen', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pumpen: pumpenListe })
+            })
+            .then(res => res.json())
+            .then(data => {
+                clearInterval(timer);
+                if (data.status === 'success') {
+                    alert("✨ Spülung abgeschlossen! Die Schläuche sind nun sauber.");
+                } else {
+                    alert("⚠️ Fehler beim Reinigen: " + data.message);
+                }
+            })
+            .catch(err => {
+                clearInterval(timer);
+                alert("❌ Netzwerkfehler: Verbindung zum Server während der Reinigung unterbrochen.");
+            })
+            .finally(() => {
+                document.getElementById('cleaningForm').style.opacity = '1';
+                document.getElementById('startCleaningBtn').disabled = false;
+                statusBox.style.display = 'none';
+                document.getElementById('cleaningForm').reset();
+                document.getElementById('selectAllPumps').checked = false;
+            });
+        }
+    </script>
+</body>
+<div id="adminModal" class="modal-overlay">
+        <div class="modal-box">
+            <h3 id="modalTitle">Eintrag bearbeiten</h3>
+            <form id="adminForm" onsubmit="submitAdminForm(event)">
+                <input type="hidden" id="formType">
+                <input type="hidden" id="formId">
+                <div id="formFields"></div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+                    <button type="submit" class="btn">Speichern</button>
+                </div>
+            </form>
+        </div>
+</div>
+</html>

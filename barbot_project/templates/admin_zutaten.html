@@ -1,0 +1,38 @@
+<div class="admin-header-bar">
+    <h2 style="margin: 0;">🍋 Zutaten verwalten</h2>
+    <button class="btn" onclick="openCreateModal('Zutat')">+ Neue Zutat</button>
+</div>
+
+<table class="admin-table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Alkohol?</th>
+            <th>Zuweisung</th>
+            <th>Aktion</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for z in zutaten %}
+        <tr>
+            <td><code>{{ z.ZutatID }}</code></td>
+            <td><strong>{{ z.Name }}</strong></td>
+            <td>{% if z.Alkohol == 1 %}Ja{% else %}Nein{% endif %}</td>
+            <td>
+                {% if z.Pumpe == 1 %}
+                <span class="badge badge-pumpe">Pumpe {{ z.PumpenNR }}</span>
+                {% else %}
+                <span class="badge badge-schiene">Pos. {{ z.SchienenPos }}</span>
+                {% endif %}
+            </td>
+            <td>
+                <button class="btn btn-edit" onclick="editItem('Zutat', {{ z.ZutatID }})">✎</button>
+                <button class="btn btn-delete" onclick="deleteItem('Zutat', {{ z.ZutatID }})">✖</button>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align: center; color: #ff6b6b;">Keine Zutaten registriert.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
